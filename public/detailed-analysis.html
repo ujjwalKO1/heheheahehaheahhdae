@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detailed Analysis - Notion IQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .notes-layout{display:flex;gap:2rem;max-width:1200px;margin:0 auto;padding:2rem;flex-direction:column;}
+    .content-box { width: 100%; max-width: 900px; margin: 0 auto; }
+    .loading{display:inline-block;width:20px;height:20px;border:3px solid rgba(158,0,255,.3);border-radius:50%;border-top-color:#9E00FF;animation:spin 1s ease-in-out infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ai-badge{display:inline-block;background:linear-gradient(90deg,#9E00FF,#BF6FFF);padding:.3rem .8rem;border-radius:20px;font-size:.8rem;margin-left:.5rem;color:#fff;font-weight:600}
+    .info-box {
+      background: rgba(158,0,255,0.1);
+      border-left: 3px solid #9E00FF;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo">
+  <img src="/logo.svg" alt="Notion IQ Logo" class="logo-img">
+  <span class="logo-text">Notion IQ</span>
+</div>
+
+    <ul></ul>
+  </nav>
+</header>
+
+<main>
+  <div class="notes-layout">
+    <div class="content-box reveal-on-scroll visible">
+      <h2>Detailed Study Guide Generator <span class="ai-badge">AI Powered</span></h2>
+
+      <div class="info-box">
+        <strong>📚 What this does:</strong><br>
+        Upload a PDF or DOCX file to generate a comprehensive study guide with 10-15 key points per page, 
+        organized by sections. Perfect for detailed exam preparation!
+      </div>
+
+      <div id="file-upload-section">
+        <p>Upload your document to create a detailed, multi-page study guide</p>
+        
+        <textarea id="notes-input" placeholder="Or paste your notes here (will be split into pages automatically)..." class="quiz-textarea"></textarea>
+
+        <input type="file" id="file-upload" accept=".txt,.docx,.pdf" class="file-input">
+        
+        <button id="extract-file" class="cta-button" style="background: rgba(255,255,255,0.1); border:1px solid #666;">
+          Extract Text (Preview Only)
+        </button>
+
+        <div style="margin-top:1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+          <button id="analyze-pages" class="cta-button">
+            <span id="analyze-text">✨ Generate Detailed Study Notes</span>
+            <span id="analyze-loading" class="loading" style="display:none;"></span>
+          </button>
+        </div>
+
+        <p class="small-muted" style="margin-top: 10px; color: #aaa; font-size: 0.9rem;">
+          This will analyze your document page-by-page and create a comprehensive study guide 
+          with important points organized by sections. You can then generate a quiz from these points.
+        </p>
+      </div>
+
+      <a href="index.html" class="back-link">← Back to Home</a>
+    </div>
+  </div>
+</main>
+
+<script>
+  const notesInput = document.getElementById('notes-input');
+  const fileUpload = document.getElementById('file-upload');
+  const extractBtn = document.getElementById('extract-file');
+  const analyzeBtn = document.getElementById('analyze-pages');
+  const analyzeText = document.getElementById('analyze-text');
+  const analyzeLoading = document.getElementById('analyze-loading');
+
+  // 1. Extract Text (Preview) - NO AI, just file parsing
+  extractBtn.addEventListener('click', async () => {
+    const file = fileUpload.files[0];
+    if (!file) { 
+      alert('Please select a file to extract.'); 
+      return; 
+    }
+    
+    extractBtn.textContent = 'Extracting...';
+    extractBtn.disabled = true;
+    
+    const fd = new FormData(); 
+    fd.append('file', file);
+    
+    try {
+      const res = await fetch('/api/extract-text', { method:'POST', body:fd });
+      const d = await res.json();
+      
+      if(d.success) {
+        notesInput.value = d.text;
+        alert('Text extracted successfully! You can now preview it or generate the detailed analysis.');
+      } else {
+        alert('Extraction failed: ' + d.message);
+      }
+    } catch(e) { 
+      console.error(e);
+      alert('Error extracting text. Please try again.'); 
+    } finally {
+      extractBtn.textContent = 'Extract Text (Preview Only)';
+      extractBtn.disabled = false;
+    }
+  });
+
+  // 2. Generate Detailed Study Notes (Uses AI)
+  analyzeBtn.addEventListener('click', async () => {
+    const hasFile = fileUpload.files.length > 0;
+    const hasText = notesInput.value.trim().length > 50;
+
+    if (!hasFile && !hasText) {
+      alert('Please upload a file or paste text first.');
+      return;
+    }
+
+    if (!hasFile && hasText && notesInput.value.trim().length < 200) {
+      alert('Please provide more content (at least 200 characters) for a meaningful analysis.');
+      return;
+    }
+
+    analyzeBtn.disabled = true;
+    analyzeText.style.display = 'none';
+    analyzeLoading.style.display = 'inline-block';
+
+    try {
+      let response;
+      
+      if (hasFile) {
+        // Upload file for analysis
+        const fd = new FormData();
+        fd.append('file', fileUpload.files[0]);
+        response = await fetch('/api/analyze-pages', { method: 'POST', body: fd });
+      } else {
+        // Send text for analysis
+        response = await fetch('/api/analyze-pages', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: notesInput.value }) 
+        });
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.url) {
+        // Save URL for navigation
+        sessionStorage.setItem('notioniq_last_points_url', data.url);
+        // Redirect to the generated study guide
+        window.location.href = data.url;
+      } else {
+        alert('Analysis failed: ' + (data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      analyzeBtn.disabled = false;
+      analyzeText.style.display = 'inline';
+      analyzeLoading.style.display = 'none';
+    }
+  });
+</script>
+
+<script src="script.js" defer></script>
+</body>
+</html>

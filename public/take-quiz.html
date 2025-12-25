@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Take Quiz - Notion IQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .quiz-container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+    .quiz-header { text-align: center; margin-bottom: 2rem; }
+    .quiz-progress { 
+      background: rgba(255,255,255,0.1); 
+      height: 8px; 
+      border-radius: 4px; 
+      margin: 1rem 0; 
+      overflow: hidden;
+    }
+    .quiz-progress-bar { 
+      height: 100%; 
+      background: linear-gradient(90deg, #9E00FF, #BF6FFF); 
+      transition: width 0.3s ease;
+    }
+    .question-card { 
+      background: rgba(10,5,20,0.5); 
+      padding: 2rem; 
+      border-radius: 12px; 
+      border: 1px solid rgba(158,0,255,0.3); 
+      margin-bottom: 2rem;
+    }
+    .question-number { color: #9E00FF; font-weight: 600; margin-bottom: 1rem; }
+    .question-text { font-size: 1.2rem; margin-bottom: 1.5rem; color: #fff; }
+    .option { 
+      padding: 1rem; 
+      margin: 0.5rem 0; 
+      background: rgba(158,0,255,0.1); 
+      border: 2px solid rgba(158,0,255,0.3); 
+      border-radius: 8px; 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+    }
+    .option:hover { background: rgba(158,0,255,0.2); transform: translateX(5px); }
+    .option.selected { background: rgba(158,0,255,0.3); border-color: #9E00FF; }
+    .option.correct { background: rgba(0,255,0,0.2); border-color: #0f0; }
+    .option.incorrect { background: rgba(255,0,0,0.2); border-color: #f00; }
+    .option.disabled { cursor: not-allowed; opacity: 0.6; }
+    .explanation { 
+      margin-top: 1rem; 
+      padding: 1rem; 
+      background: rgba(158,0,255,0.1); 
+      border-left: 3px solid #9E00FF; 
+      border-radius: 4px;
+      display: none;
+    }
+    .explanation.show { display: block; }
+    .quiz-controls { display: flex; justify-content: space-between; margin-top: 2rem; }
+    .quiz-btn { 
+      padding: 0.8rem 1.5rem; 
+      border: none; 
+      border-radius: 25px; 
+      cursor: pointer; 
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .quiz-btn-primary { background: linear-gradient(90deg, #9E00FF, #BF6FFF); color: white; }
+    .quiz-btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(158,0,255,0.3); }
+    .quiz-btn:hover { transform: translateY(-2px); }
+    .quiz-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .results-card { 
+      background: rgba(10,5,20,0.5); 
+      padding: 3rem; 
+      border-radius: 12px; 
+      border: 1px solid rgba(158,0,255,0.3); 
+      text-align: center;
+    }
+    .score-display { 
+      font-size: 3rem; 
+      color: #9E00FF; 
+      font-weight: 700; 
+      margin: 1rem 0;
+    }
+    .score-message { font-size: 1.2rem; margin: 1rem 0; }
+    .review-list { text-align: left; margin-top: 2rem; }
+    .review-item { 
+      background: rgba(255,255,255,0.05); 
+      padding: 1rem; 
+      margin: 0.5rem 0; 
+      border-radius: 8px;
+      border-left: 3px solid #9E00FF;
+    }
+    .review-item.wrong { border-left-color: #f00; }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo">
+  <img src="/logo.svg" alt="Notion IQ Logo" class="logo-img">
+  <span class="logo-text">Notion IQ</span>
+</div>
+
+    <ul></ul>
+  </nav>
+</header>
+
+<main>
+  <div class="quiz-container">
+    <div class="content-box reveal-on-scroll visible">
+      <div id="quiz-view">
+        <div class="quiz-header">
+          <h2>📝 AI-Generated Quiz</h2>
+          <div class="quiz-progress">
+            <div class="quiz-progress-bar" id="progress-bar"></div>
+          </div>
+          <p id="progress-text">Question 1 of 5</p>
+        </div>
+
+        <div class="question-card" id="question-card">
+          <div class="question-number" id="question-number">Question 1</div>
+          <div class="question-text" id="question-text"></div>
+          <div id="options-container"></div>
+          <div class="explanation" id="explanation"></div>
+        </div>
+
+        <div class="quiz-controls">
+          <button class="quiz-btn quiz-btn-secondary" id="prev-btn" disabled>← Previous</button>
+          <button class="quiz-btn quiz-btn-primary" id="next-btn">Next →</button>
+          <button class="quiz-btn quiz-btn-primary" id="submit-btn" style="display:none;">Submit Quiz</button>
+        </div>
+      </div>
+
+      <div id="results-view" style="display:none;">
+        <div class="results-card">
+          <h2>🎉 Quiz Complete!</h2>
+          <div class="score-display" id="final-score"></div>
+          <div class="score-message" id="score-message"></div>
+          
+          <div class="review-list" id="review-list"></div>
+          
+          <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+            <button class="quiz-btn quiz-btn-secondary" id="review-btn">Review Answers</button>
+            <button class="quiz-btn quiz-btn-primary" id="retake-btn">Retake Quiz</button>
+            <a href="/Notion.html" class="quiz-btn quiz-btn-secondary" style="text-decoration:none; display:inline-block;">Create New Notes</a>
+          </div>
+        </div>
+      </div>
+
+      <a href="/Notion.html" class="back-link">← Back to Notes</a>
+    </div>
+  </div>
+</main>
+
+<script>
+  let questions = [];
+  let currentQuestion = 0;
+  let userAnswers = [];
+  let quizSubmitted = false;
+
+  // Load questions from sessionStorage
+  function loadQuiz() {
+    const stored = sessionStorage.getItem('aiQuizQuestions');
+    if (!stored) {
+      alert('No quiz found. Please generate a quiz first.');
+      window.location.href = '/Notion.html';
+      return;
+    }
+    
+    try {
+      questions = JSON.parse(stored);
+      if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error('Invalid quiz data');
+      }
+      userAnswers = new Array(questions.length).fill(null);
+      displayQuestion();
+    } catch (e) {
+      alert('Error loading quiz. Please generate a new one.');
+      window.location.href = '/Notion.html';
+    }
+  }
+
+  function displayQuestion() {
+    const q = questions[currentQuestion];
+    document.getElementById('question-number').textContent = `Question ${currentQuestion + 1}`;
+    document.getElementById('question-text').textContent = q.question;
+    document.getElementById('progress-text').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+    document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+
+    const optionsContainer = document.getElementById('options-container');
+    optionsContainer.innerHTML = '';
+
+    q.options.forEach((option, idx) => {
+      const div = document.createElement('div');
+      div.className = 'option';
+      div.textContent = option;
+      div.dataset.index = idx;
+
+      if (userAnswers[currentQuestion] === idx) {
+        div.classList.add('selected');
+      }
+
+      if (quizSubmitted) {
+        div.classList.add('disabled');
+        if (option === q.answer) {
+          div.classList.add('correct');
+        } else if (userAnswers[currentQuestion] === idx) {
+          div.classList.add('incorrect');
+        }
+      } else {
+        div.addEventListener('click', () => selectOption(idx));
+      }
+
+      optionsContainer.appendChild(div);
+    });
+
+    // Show explanation if submitted
+    const explanationDiv = document.getElementById('explanation');
+    if (quizSubmitted && q.explanation) {
+      explanationDiv.innerHTML = `<strong>Explanation:</strong> ${q.explanation}`;
+      explanationDiv.classList.add('show');
+    } else {
+      explanationDiv.classList.remove('show');
+    }
+
+    // Update button states
+    document.getElementById('prev-btn').disabled = currentQuestion === 0;
+    document.getElementById('next-btn').style.display = currentQuestion === questions.length - 1 ? 'none' : 'inline-block';
+    document.getElementById('submit-btn').style.display = currentQuestion === questions.length - 1 && !quizSubmitted ? 'inline-block' : 'none';
+  }
+
+  function selectOption(idx) {
+    if (quizSubmitted) return;
+    userAnswers[currentQuestion] = idx;
+    displayQuestion();
+  }
+
+  function nextQuestion() {
+    if (currentQuestion < questions.length - 1) {
+      currentQuestion++;
+      displayQuestion();
+    }
+  }
+
+  function prevQuestion() {
+    if (currentQuestion > 0) {
+      currentQuestion--;
+      displayQuestion();
+    }
+  }
+
+  function submitQuiz() {
+    if (userAnswers.includes(null)) {
+      if (!confirm('You have unanswered questions. Submit anyway?')) return;
+    }
+    
+    quizSubmitted = true;
+    showResults();
+  }
+
+  function showResults() {
+    let score = 0;
+    questions.forEach((q, idx) => {
+      if (q.options[userAnswers[idx]] === q.answer) score++;
+    });
+
+    const percentage = Math.round((score / questions.length) * 100);
+    document.getElementById('final-score').textContent = `${score} / ${questions.length}`;
+    
+    let message = '';
+    if (percentage >= 80) message = 'Excellent work! 🌟';
+    else if (percentage >= 60) message = 'Good job! Keep practicing! 👍';
+    else message = 'Keep studying, you can do better! 💪';
+    document.getElementById('score-message').textContent = `${percentage}% - ${message}`;
+
+    // Review list
+    const reviewList = document.getElementById('review-list');
+    reviewList.innerHTML = '<h3 style="margin-bottom: 1rem;">Review:</h3>';
+    questions.forEach((q, idx) => {
+      const isCorrect = q.options[userAnswers[idx]] === q.answer;
+      const div = document.createElement('div');
+      div.className = `review-item ${!isCorrect ? 'wrong' : ''}`;
+      div.innerHTML = `
+        <strong>Q${idx + 1}:</strong> ${q.question}<br>
+        <span style="color: ${isCorrect ? '#0f0' : '#f00'}">
+          Your answer: ${q.options[userAnswers[idx]] || 'Not answered'}
+        </span><br>
+        ${!isCorrect ? `<span style="color: #0f0">Correct answer: ${q.answer}</span>` : ''}
+      `;
+      reviewList.appendChild(div);
+    });
+
+    document.getElementById('quiz-view').style.display = 'none';
+    document.getElementById('results-view').style.display = 'block';
+  }
+
+  function reviewAnswers() {
+    currentQuestion = 0;
+    document.getElementById('results-view').style.display = 'none';
+    document.getElementById('quiz-view').style.display = 'block';
+    displayQuestion();
+  }
+
+  function retakeQuiz() {
+    currentQuestion = 0;
+    userAnswers = new Array(questions.length).fill(null);
+    quizSubmitted = false;
+    document.getElementById('results-view').style.display = 'none';
+    document.getElementById('quiz-view').style.display = 'block';
+    displayQuestion();
+  }
+
+  // Event listeners
+  document.getElementById('next-btn').addEventListener('click', nextQuestion);
+  document.getElementById('prev-btn').addEventListener('click', prevQuestion);
+  document.getElementById('submit-btn').addEventListener('click', submitQuiz);
+  document.getElementById('review-btn').addEventListener('click', reviewAnswers);
+  document.getElementById('retake-btn').addEventListener('click', retakeQuiz);
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', loadQuiz);
+</script>
+
+<script src="script.js" defer></script>
+</body>
+</html>
