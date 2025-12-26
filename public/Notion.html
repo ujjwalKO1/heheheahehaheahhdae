@@ -51,7 +51,99 @@
     <div class="notes-main">
       <div class="signin-page-wrapper">
         <div class="content-box reveal-on-scroll visible">
-          <h2>Quick Notes Analyzer <span class="ai-badge">AI Powered</span></h2>
+          <h2><!-- Add this to your Notion.html, right after the <h2>Quick Notes Analyzer</h2> tag -->
+
+<div id="usage-widget" style="background: rgba(158,0,255,0.1); border: 1px solid rgba(158,0,255,0.3); border-radius: 8px; padding: 15px; margin: 15px 0; display: none;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <div>
+      <strong>Daily Usage:</strong> 
+      <span id="usage-text">0 / 10</span>
+      <span id="tier-badge" style="background: linear-gradient(90deg, #9E00FF, #BF6FFF); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 10px;">Free</span>
+    </div>
+    <a href="/usage.html" style="color: #BF6FFF; text-decoration: none; font-size: 0.9rem;">View Details →</a>
+  </div>
+  <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+    <div id="usage-bar" style="height: 100%; background: linear-gradient(90deg, #9E00FF, #BF6FFF); width: 0%; transition: width 0.3s;"></div>
+  </div>
+  <p id="usage-message" style="margin-top: 8px; font-size: 0.85rem; color: #bbb;"></p>
+</div>
+
+<!-- Add this script at the end of Notion.html, before the closing </body> tag -->
+<script>
+(function() {
+  const usageWidget = document.getElementById('usage-widget');
+  const usageText = document.getElementById('usage-text');
+  const usageBar = document.getElementById('usage-bar');
+  const usageMessage = document.getElementById('usage-message');
+  const tierBadge = document.getElementById('tier-badge');
+
+  async function updateUsage() {
+    try {
+      const res = await fetch('/api/my-usage', { credentials: 'include' });
+      if (!res.ok) return; // User not logged in or error
+      
+      const data = await res.json();
+      
+      // Show widget
+      usageWidget.style.display = 'block';
+      
+      // Update text
+      usageText.textContent = `${data.usage.today} / ${data.limits.daily}`;
+      
+      // Update tier badge
+      tierBadge.textContent = data.tier.charAt(0).toUpperCase() + data.tier.slice(1);
+      if (data.tier === 'premium') {
+        tierBadge.style.background = 'linear-gradient(90deg, #FFD700, #FFA500)';
+        tierBadge.style.color = '#000';
+      }
+      
+      // Update progress bar
+      const percentage = (data.usage.today / data.limits.daily) * 100;
+      usageBar.style.width = `${Math.min(100, percentage)}%`;
+      
+      // Update bar color based on usage
+      if (percentage > 80) {
+        usageBar.style.background = 'linear-gradient(90deg, #FF0000, #CC0000)';
+      } else if (percentage > 60) {
+        usageBar.style.background = 'linear-gradient(90deg, #FF6B00, #FF9500)';
+      }
+      
+      // Update message
+      if (data.remaining <= 0) {
+        usageMessage.textContent = '⚠️ Daily limit reached! ' + 
+          (data.canUpgrade ? 'Upgrade to premium for 10x more requests!' : 'Resets at midnight.');
+        usageMessage.style.color = '#ff6b6b';
+      } else if (data.remaining <= 3) {
+        usageMessage.textContent = `⚠️ Only ${data.remaining} requests left today!`;
+        usageMessage.style.color = '#ffa500';
+      } else {
+        usageMessage.textContent = `${data.remaining} requests remaining today`;
+        usageMessage.style.color = '#bbb';
+      }
+      
+    } catch (err) {
+      console.error('Failed to load usage:', err);
+    }
+  }
+  
+  // Update on page load
+  updateUsage();
+  
+  // Update after each API call
+  const originalFetch = window.fetch;
+  window.fetch = function(...args) {
+    return originalFetch.apply(this, args).then(response => {
+      if (args[0].includes('/api/analyze') || 
+          args[0].includes('/api/generate-quiz') || 
+          args[0].includes('/api/analyze-pages')) {
+        setTimeout(updateUsage, 500);
+      }
+      return response;
+    });
+  };
+})();
+</script>Quick Notes Analyzer <span class="ai-badge">AI Powered</span></h2>
+          
 
           <div class="info-box">
             <strong>⚡ Quick Analysis:</strong><br>

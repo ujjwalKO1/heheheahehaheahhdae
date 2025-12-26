@@ -1,4 +1,4 @@
-/* script.js - shared header/nav manager with logo */
+/* script.js - shared header/nav manager with logo and usage link */
 (function () {
   function onReady(fn) {
     if (document.readyState !== 'loading') fn();
@@ -50,6 +50,9 @@
 
         // Detailed Analysis
         ul.appendChild(createLink('/detailed-analysis.html', 'Detailed Analysis', path === 'detailed-analysis.html'));
+
+        // Usage Dashboard - NEW!
+        ul.appendChild(createLink('/usage.html', 'Usage', path === 'usage.html'));
 
         // Important Points (Dynamic Link - if exists)
         const lastPointsUrl = getStorage('notioniq_last_points_url');

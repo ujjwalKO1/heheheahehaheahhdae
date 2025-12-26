@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage Dashboard - Notion IQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .usage-container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+    .usage-card { 
+      background: rgba(10,5,20,0.5); 
+      border-radius: 12px; 
+      padding: 2rem; 
+      margin-bottom: 2rem; 
+      border: 1px solid rgba(158,0,255,0.3); 
+    }
+    .card-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 1.5rem; 
+    }
+    .tier-badge { 
+      background: linear-gradient(90deg, #9E00FF, #BF6FFF); 
+      padding: 8px 20px; 
+      border-radius: 20px; 
+      font-size: 1rem; 
+      font-weight: bold; 
+    }
+    .tier-badge.premium { 
+      background: linear-gradient(90deg, #FFD700, #FFA500); 
+      color: #000; 
+    }
+    .progress-container { 
+      background: rgba(255,255,255,0.1); 
+      height: 40px; 
+      border-radius: 20px; 
+      overflow: hidden; 
+      margin: 20px 0; 
+      position: relative; 
+    }
+    .progress-fill { 
+      height: 100%; 
+      background: linear-gradient(90deg, #9E00FF, #BF6FFF); 
+      transition: width 0.3s; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-weight: bold; 
+      font-size: 1.1rem;
+    }
+    .progress-fill.warning { background: linear-gradient(90deg, #FF6B00, #FF9500); }
+    .progress-fill.danger { background: linear-gradient(90deg, #FF0000, #CC0000); }
+    .stats-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 1.5rem; 
+      margin: 2rem 0; 
+    }
+    .stat-box { 
+      background: rgba(158,0,255,0.1); 
+      padding: 1.5rem; 
+      border-radius: 12px; 
+      text-align: center; 
+      border: 1px solid rgba(158,0,255,0.2);
+    }
+    .stat-value { 
+      font-size: 2.5rem; 
+      font-weight: bold; 
+      color: #BF6FFF; 
+      margin-bottom: 0.5rem; 
+    }
+    .stat-label { font-size: 1rem; color: #bbb; }
+    .upgrade-card { 
+      background: linear-gradient(135deg, rgba(158,0,255,0.2), rgba(191,111,255,0.2)); 
+      border: 2px solid rgba(158,0,255,0.4); 
+      border-radius: 12px; 
+      padding: 2.5rem; 
+      text-align: center; 
+    }
+    .upgrade-card h2 { margin-bottom: 1rem; }
+    .feature-list { 
+      list-style: none; 
+      padding: 0; 
+      margin: 2rem auto; 
+      max-width: 400px; 
+      text-align: left; 
+    }
+    .feature-list li { 
+      padding: 0.5rem 0; 
+      font-size: 1.1rem; 
+    }
+    .feature-list li:before { 
+      content: "✅ "; 
+      margin-right: 10px; 
+    }
+    .system-status {
+      background: rgba(0,255,0,0.1);
+      border-left: 3px solid #0f0;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo">
+      <img src="/logo.svg" alt="Notion IQ Logo" class="logo-img">
+      <span class="logo-text">Notion IQ</span>
+    </div>
+    <ul></ul>
+  </nav>
+</header>
+
+<main>
+  <div class="usage-container">
+    <div class="content-box reveal-on-scroll visible">
+      <h1 style="text-align: center; margin-bottom: 2rem;">📊 Usage Dashboard</h1>
+      
+      <div id="loading" style="text-align: center; padding: 3rem;">
+        <div class="loading"></div>
+        <p style="margin-top: 1rem;">Loading your usage data...</p>
+      </div>
+      
+      <div id="content" style="display: none;">
+        <!-- Current Plan Card -->
+        <div class="usage-card">
+          <div class="card-header">
+            <h2 style="margin: 0;">Current Plan</h2>
+            <span class="tier-badge" id="tier-badge">Free</span>
+          </div>
+          
+          <div class="progress-container">
+            <div class="progress-fill" id="progress-bar" style="width: 0%;">
+              <span id="progress-text">0 / 10</span>
+            </div>
+          </div>
+          
+          <p style="text-align: center; font-size: 1.1rem; color: #bbb; margin-top: 1rem;">
+            <span id="remaining-text">10 requests remaining today</span>
+          </p>
+        </div>
+        
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-value" id="today-stat">0</div>
+            <div class="stat-label">Used Today</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="total-stat">0</div>
+            <div class="stat-label">Total Requests</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="limit-stat">10</div>
+            <div class="stat-label">Daily Limit</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="rate-stat">3</div>
+            <div class="stat-label">Per Minute</div>
+          </div>
+        </div>
+        
+        <!-- System Status -->
+        <div class="system-status" id="system-status">
+          <strong>🟢 System Status:</strong> All systems operational
+          <div style="margin-top: 10px; font-size: 0.9rem;">
+            <span id="cache-status">Cache: Loading...</span> | 
+            <span id="api-status">API Keys: Loading...</span>
+          </div>
+        </div>
+        
+        <!-- Upgrade Section (only for free users) -->
+        <div id="upgrade-section" class="upgrade-card" style="margin-top: 2rem;">
+          <h2>🚀 Upgrade to Premium</h2>
+          <p style="font-size: 1.1rem; margin: 1rem 0;">
+            Get 10x more requests and unlock advanced features!
+          </p>
+          
+          <ul class="feature-list">
+            <li>100 requests per day (vs 10)</li>
+            <li>15 requests per minute (vs 3)</li>
+            <li>Priority processing</li>
+            <li>Advanced AI features</li>
+            <li>Email support</li>
+            <li>No ads</li>
+          </ul>
+          
+          <button class="cta-button" onclick="alert('Premium upgrade coming soon! Check back later.')">
+            Upgrade Now - $9.99/month
+          </button>
+          
+          <p style="margin-top: 1.5rem; font-size: 0.9rem; color: #bbb;">
+            💡 Or get more API keys for free at 
+            <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: #BF6FFF;">
+              Google AI Studio
+            </a>
+          </p>
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 2rem;">
+        <a href="/Notion.html" class="back-link">← Back to Notes</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  async function loadDashboard() {
+    try {
+      // Load user usage
+      const usageRes = await fetch('/api/my-usage', { credentials: 'include' });
+      if (!usageRes.ok) {
+        window.location.href = '/signin.html';
+        return;
+      }
+      
+      const usage = await usageRes.json();
+      
+      // Load system health
+      const healthRes = await fetch('/api/health');
+      const health = await healthRes.json();
+      
+      // Update tier badge
+      const tierBadge = document.getElementById('tier-badge');
+      tierBadge.textContent = usage.tier.charAt(0).toUpperCase() + usage.tier.slice(1);
+      if (usage.tier === 'premium') {
+        tierBadge.classList.add('premium');
+      }
+      
+      // Update progress bar
+      const percentage = (usage.usage.today / usage.limits.daily) * 100;
+      const progressBar = document.getElementById('progress-bar');
+      progressBar.style.width = `${Math.min(100, percentage)}%`;
+      
+      // Color based on usage
+      progressBar.classList.remove('warning', 'danger');
+      if (percentage > 80) {
+        progressBar.classList.add('danger');
+      } else if (percentage > 60) {
+        progressBar.classList.add('warning');
+      }
+      
+      document.getElementById('progress-text').textContent = 
+        `${usage.usage.today} / ${usage.limits.daily}`;
+      
+      // Update remaining text
+      const remainingText = document.getElementById('remaining-text');
+      if (usage.remaining <= 0) {
+        remainingText.innerHTML = '⚠️ Daily limit reached! ' + 
+          (usage.canUpgrade ? '<a href="#upgrade-section" style="color: #FFD700;">Upgrade now</a>' : 'Resets at midnight');
+        remainingText.style.color = '#ff6b6b';
+      } else if (usage.remaining <= 3) {
+        remainingText.textContent = `⚠️ Only ${usage.remaining} requests left today!`;
+        remainingText.style.color = '#ffa500';
+      } else {
+        remainingText.textContent = `${usage.remaining} requests remaining today`;
+      }
+      
+      // Update stats
+      document.getElementById('today-stat').textContent = usage.usage.today;
+      document.getElementById('total-stat').textContent = usage.usage.total;
+      document.getElementById('limit-stat').textContent = usage.limits.daily;
+      document.getElementById('rate-stat').textContent = usage.limits.perMinute;
+      
+      // Update system status
+      document.getElementById('cache-status').textContent = 
+        `Cache: ${health.cache.size}/${health.cache.maxSize} (${health.cache.hitRate}% hit rate)`;
+      document.getElementById('api-status').textContent = 
+        `API Keys: ${health.apiKeys.activeKeys}/${health.apiKeys.totalKeys} active`;
+      
+      // Hide upgrade section for premium users
+      if (usage.tier === 'premium') {
+        document.getElementById('upgrade-section').style.display = 'none';
+      }
+      
+      // Show content
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      
+    } catch (error) {
+      console.error('Error loading dashboard:', error);
+      document.getElementById('loading').innerHTML = 
+        '<p style="color: #ff6b6b;">Failed to load dashboard. Please try again.</p>';
+    }
+  }
+  
+  // Load on page load
+  document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+
+<script src="script.js" defer></script>
+</body>
+</html>
